@@ -346,14 +346,8 @@ class Bag2SIP4DConverter:
                 },
                 "properties": {
                     "filename": img_info['filename'],
-                    "heading": img_info['heading'],
-                    "timestamp": img_info['timestamp'],
-                    "_attachedFiles": [
-                        {
-                            "filename": img_info['filename'],
-                            "filetype": "JPG"
-                        }
-                    ]
+                    "heading": float(img_info['heading']),
+                    "timestamp": img_info['timestamp']
                 }
             }
             features.append(feature)
@@ -366,44 +360,49 @@ class Bag2SIP4DConverter:
     def create_schema(self):
         """Create schema.json"""
         return {
-            "type": "object",
-            "properties": {
-                "filename": {
-                    "type": "string",
-                    "description": "Image filename"
+            "num_column": 3,
+            "code": "99-999-99",
+            "version": "1",
+            "columns": [
+                {
+                    "name": "filename",
+                    "jname": "ファイル名",
+                    "connid": "filename",
+                    "show": True,
+                    "description": "画像ファイル名",
+                    "type": "String"
                 },
-                "heading": {
-                    "type": "number",
+                {
+                    "name": "heading",
+                    "jname": "方位角",
+                    "connid": "heading",
+                    "show": True,
                     "description": "Camera heading angle (0=North, 90=East, 180=South, 270=West)",
-                    "minimum": 0,
-                    "maximum": 360
+                    "type": "Double"
                 },
-                "timestamp": {
-                    "type": "string",
-                    "description": "Image timestamp (ISO8601)"
+                {
+                    "name": "timestamp",
+                    "jname": "タイムスタンプ",
+                    "connid": "timestamp",
+                    "show": True,
+                    "description": "Image timestamp (ISO8601)",
+                    "type": "String"
                 }
-            },
-            "required": ["filename", "heading", "timestamp"]
+            ]
         }
 
     def create_metadata(self):
         """Create sip4d_zip_meta.json"""
-        now = datetime.now(tz=timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', '+09:00')
-        start_time = self.images[0]['timestamp'] if self.images else now
-        end_time = self.images[-1]['timestamp'] if self.images else now
+        end = self.images[-1]['timestamp'] if self.images else now
 
         return {
-            "format": "SIP4D-ZIP",
-            "version": "2.0",
+            "version": "1",
             "title": "ドローン斜め写真画像",
-            "dataId": str(uuid.uuid4()),
-            "timeTrackingId": str(uuid.uuid4()),
-            "payloadType": "VECTOR",
-            "informationTypeCode": "universal",
-            "tags": ["drone", "aerial", "oblique", "camera"],
-            "sharedDate": now,
-            "updateDate": now,
-            "informationDate": end_time,
+            "updated": datetime.now(tz=timezone.utc).strftime('%Y-%m-%dT%H:%M:%S'),
+            "information_date": datetime.fromisoformat(end).strftime('%Y-%m-%dT%H:%M:%S'),
+            "code": "99-999-99",
+            "category": "その他",
+            "format": "SIP4D-ZIP",
             "author": {
                 "name": "sip4d_ros",
                 "e-mail": "info@example.jp"
@@ -412,31 +411,25 @@ class Bag2SIP4DConverter:
                 "name": "sip4d_ros",
                 "e-mail": "info@example.jp"
             },
-            "disasterInformation": {
+            "disaster": {
                 "name": "-"
             },
-            "usePossibilities": ["制限なし"],
-            "secondaryUsePossibilities": ["制限なし"],
-            "tertiaryUsePossibility": False,
-            "operationType": "試験",
-            "registrationType": "登録",
-            "characterCode": "UTF-8",
-            "licenseId": "cc-zero",
-            "spatial": {
-                "minimumLatitude": self.min_lat,
-                "minimumLongitude": self.min_lon,
-                "maximumLatitude": self.max_lat,
-                "maximumLongitude": self.max_lon
-            },
-            "entries": {
-                "images": {
-                    "fileType": "GeoJSON",
-                    "title": "Camera Images",
-                    "updateDate": now,
-                    "informationDate": end_time
-                }
-            },
-            "language": "ja"
+            "openflg": "一般公開可能",
+            "ttid": str(uuid.uuid4()),
+            "lgcode": None,
+            "license_id": "cc-zero",
+            "tags": ["drone", "aerial", "oblique", "camera"],
+            "testflg": "試験",
+            "crs": "4326",
+            "character": "UTF-8",
+            "note": "",
+            "entry_num": 1,
+            "entry": [{
+                "type": "GeoJSON",
+                "title": "Camera Images",
+                "file": "images/features.geojson",
+                "updated": now
+            }]
         }
 
     def create_zip(self):
