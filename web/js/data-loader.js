@@ -4,6 +4,8 @@ class DataLoader {
         this.metadata = null;
         this.imageDirectory = null;
         this.zipFilename = null;
+        this.imageMap = new Map();
+        this.zipInstance = null;
     }
 
     async loadFromZip(zipFile) {

@@ -158,12 +158,11 @@ async function loadSampleData() {
         if (response.ok) {
             const geojsonData = await response.json();
 
-            // ダミー画像を生成（小さな画像をBase64で作成）
+            // ダミー画像を生成
             const dummyImageBlob = await generateDummyImage();
             const dummyImageUrl = URL.createObjectURL(dummyImageBlob);
 
             // dataLoaderにダミー画像を追加
-            if (!dataLoader.imageMap) dataLoader.imageMap = new Map();
             dataLoader.imageMap.set('data/sample_image.jpg', dummyImageUrl);
 
             mapManager.addMarkersFromGeoJSON(geojsonData, dataLoader);
