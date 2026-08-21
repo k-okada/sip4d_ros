@@ -326,6 +326,29 @@ header p {
     border-radius: 0;
 }
 
+/* Debug Panel */
+.debug-info {
+    padding: 12px;
+    background: #f0f0f0;
+    border-radius: 6px;
+    font-size: 12px;
+    line-height: 1.8;
+    font-family: 'Courier New', monospace;
+}
+
+.debug-info div {
+    margin-bottom: 6px;
+    padding: 4px;
+    background: white;
+    border-radius: 3px;
+}
+
+.debug-info strong {
+    color: var(--primary-color);
+    min-width: 100px;
+    display: inline-block;
+}
+
 @media (max-width: 768px) {
     .content {
         flex-direction: column;

@@ -12,9 +12,27 @@ document.addEventListener('DOMContentLoaded', () => {
     // Setup event listeners
     setupEventListeners();
 
+    // Initialize debug panel
+    updateDebugInfo();
+
     // Load sample data if available
     loadSampleData();
 });
+
+function updateDebugInfo() {
+    const version = document.querySelector('header p:last-of-type')?.textContent || 'N/A';
+    document.getElementById('versionDebug').textContent = version.replace('Version: ', '');
+
+    // Update periodically
+    setInterval(() => {
+        document.getElementById('markerCount').textContent = mapManager?.markers?.length || 0;
+        document.getElementById('featureCount').textContent = dataLoader?.geojsonData?.features?.length || 0;
+        document.getElementById('imageCount').textContent = dataLoader?.imageMap?.size || 0;
+        if (mapManager?.map) {
+            document.getElementById('mapZoom').textContent = mapManager.map.getZoom();
+        }
+    }, 500);
+}
 
 function setupEventListeners() {
     // Upload button
