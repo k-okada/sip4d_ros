@@ -133,15 +133,67 @@ async function loadSampleData() {
         const response = await fetch('data/sample.geojson');
         if (response.ok) {
             const geojsonData = await response.json();
+
+            // ダミー画像を生成（小さな画像をBase64で作成）
+            const dummyImageBlob = await generateDummyImage();
+            const dummyImageUrl = URL.createObjectURL(dummyImageBlob);
+
+            // dataLoaderにダミー画像を追加
+            if (!dataLoader.imageMap) dataLoader.imageMap = new Map();
+            dataLoader.imageMap.set('data/sample_image.jpg', dummyImageUrl);
+
             mapManager.addMarkersFromGeoJSON(geojsonData, dataLoader);
 
             const dataInfo = document.getElementById('dataInfo');
             dataInfo.innerHTML = `
                 <strong>✅ サンプルデータを読み込みました</strong>
                 <p><strong>フィーチャー数:</strong> ${geojsonData.features?.length || 0}</p>
+                <h3 style="margin-top: 15px; font-size: 14px;">📸 画像リスト</h3>
+                <div class="feature-list">
+                    <div class="feature-list-item" onclick="mapManager.markers[0] && mapManager.markers[0].fireEvent('click')">
+                        <div style="cursor: pointer; padding: 8px; background: #f9f9f9; border-radius: 4px; margin-bottom: 4px; border-left: 3px solid var(--primary-color);">
+                            <strong>sample_image.jpg</strong>
+                            <span style="float: right; font-size: 12px; color: #666;">東</span>
+                        </div>
+                    </div>
+                </div>
             `;
+
+            console.log('=== サンプルデータ読み込み完了 ===');
+            console.log('フィーチャー数: 1');
+            console.log('マーカー数:', mapManager.markers.length);
         }
     } catch (error) {
         console.log('サンプルデータは利用できません:', error.message);
     }
+}
+
+/**
+ * ダミー画像を生成（グラデーション付き）
+ */
+async function generateDummyImage() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 640;
+    canvas.height = 480;
+
+    const ctx = canvas.getContext('2d');
+
+    // グラデーション背景
+    const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+    gradient.addColorStop(0, '#1e40af');
+    gradient.addColorStop(1, '#0ea5e9');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // テキスト
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 48px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('SIP4D-ZIP Sample', canvas.width / 2, canvas.height / 2 - 40);
+
+    ctx.font = '24px Arial';
+    ctx.fillText('東京 / 35.7°N 139.7°E', canvas.width / 2, canvas.height / 2 + 40);
+
+    return new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.9));
 }

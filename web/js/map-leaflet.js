@@ -75,8 +75,8 @@ class MapManager {
                 const marker = L.marker([lat, lng], { icon })
                     .bindPopup(feature.properties?.filename || `マーカー ${index + 1}`)
                     .on('click', () => this.selectMarker(marker, feature))
-                    .on('mouseover', function() { this.openPopup(); })
-                    .on('mouseout', function() { this.closePopup(); });
+                    .on('mouseover', () => this.onMarkerHover(marker, feature))
+                    .on('mouseout', () => this.onMarkerLeave(marker));
 
                 marker.featureData = feature;
                 marker.featureIndex = index;
@@ -195,5 +195,23 @@ class MapManager {
         if (this.markers.length === 0) return;
         const group = L.featureGroup(this.markers);
         this.map.fitBounds(group.getBounds());
+    }
+
+    onMarkerHover(marker, feature) {
+        marker.openPopup();
+
+        // マーカー上に画像を表示
+        if (this.dataLoader) {
+            this.loadImagePreview(this.dataLoader.getFeatureImage(feature));
+        }
+    }
+
+    onMarkerLeave(marker) {
+        marker.closePopup();
+        // マーカーを離れたら画像を非表示
+        const featureImageContainer = document.getElementById('featureImageContainer');
+        if (featureImageContainer && !featureImageContainer.dataset.locked) {
+            featureImageContainer.style.display = 'none';
+        }
     }
 }

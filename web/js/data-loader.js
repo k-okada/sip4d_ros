@@ -108,8 +108,13 @@ class DataLoader {
 
         // ファイル名プロパティから画像を取得
         const filename = feature.properties.filename;
-        if (!filename || !this.imageDirectory) {
+        if (!filename) {
             return null;
+        }
+
+        // imageDirectory がない場合（サンプルデータ）
+        if (!this.imageDirectory) {
+            return `data/${filename}`;
         }
 
         return `${this.imageDirectory}/${filename}`;
