@@ -4,10 +4,10 @@
   <version>0.1.0</version>
   <description>Convert ROS bag files to SIP4D-ZIP format for disaster information sharing</description>
 
-  <maintainer email="sugihara@jsk.imi.i.u-tokyo.ac.jp">Sugikazu Sugihara</maintainer>
+  <maintainer email="sugihara@jsk.imi.i.u-tokyo.ac.jp">Kazuki Sugihara</maintainer>
   <license>BSD</license>
 
-  <author email="sugihara@jsk.imi.i.u-tokyo.ac.jp">Sugikazu Sugihara</author>
+  <author email="sugihara@jsk.imi.i.u-tokyo.ac.jp">Kazuki Sugihara</author>
 
   <buildtool_depend>catkin</buildtool_depend>
 
