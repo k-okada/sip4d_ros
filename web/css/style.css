@@ -311,19 +311,19 @@ header p {
 }
 
 /* Feature Image in Sidebar */
-.feature-image-section {
-    margin-top: 15px;
-    padding-top: 15px;
-    border-top: 1px solid var(--border-color);
+.feature-image-container {
+    margin: 0 -20px 20px -20px;
+    padding: 0;
+    width: calc(100% + 40px);
 }
 
-.feature-image-preview {
+.feature-image {
     width: 100%;
     height: auto;
-    border-radius: 6px;
-    box-shadow: var(--shadow);
-    max-height: 300px;
+    display: block;
     object-fit: cover;
+    max-height: 250px;
+    border-radius: 0;
 }
 
 @media (max-width: 768px) {

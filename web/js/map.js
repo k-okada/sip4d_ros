@@ -162,16 +162,13 @@ class MapManager {
         try {
             const imageUrl = await this.dataLoader.getImageUrl(imagePath);
             if (imageUrl) {
-                // 画像を詳細パネルに表示
-                const imageSection = `
-                    <div class="feature-image-section">
-                        <img src="${imageUrl}" alt="Preview" class="feature-image-preview">
-                    </div>
-                `;
-                container.innerHTML = infoHtml + imageSection;
-            } else {
-                container.innerHTML = infoHtml;
+                // 画像をサイドバーの画像コンテナに表示
+                const imageContainer = document.getElementById('featureImageContainer');
+                const featureImage = document.getElementById('featureImage');
+                featureImage.src = imageUrl;
+                imageContainer.style.display = 'block';
             }
+            container.innerHTML = infoHtml;
         } catch (error) {
             console.error('画像の読み込みに失敗しました:', error);
             container.innerHTML = infoHtml;
