@@ -358,37 +358,119 @@ class Bag2SIP4DConverter:
         }
 
     def create_schema(self):
-        """Create schema.json"""
-        return {
-            "num_column": 3,
-            "code": "99-999-99",
-            "version": "1",
-            "columns": [
+        """Create schema.json in SIP4D-ZIP v2 format with backward compatibility"""
+        # Build elements array (v2 format)
+        elements = [
                 {
-                    "name": "filename",
-                    "jname": "ファイル名",
-                    "connid": "filename",
+                    "propertyInformation": {
+                        "name": "filename",
+                        "label": "ファイル名",
+                        "unit": ""
+                    },
                     "show": True,
-                    "description": "画像ファイル名",
-                    "type": "String"
+                    "necessary": False,
+                    "description": "Image filename",
+                    "dataType": "String"
                 },
                 {
-                    "name": "heading",
-                    "jname": "方位角",
-                    "connid": "heading",
+                    "propertyInformation": {
+                        "name": "heading",
+                        "label": "撮影方向",
+                        "unit": "度"
+                    },
                     "show": True,
+                    "necessary": False,
                     "description": "Camera heading angle (0=North, 90=East, 180=South, 270=West)",
-                    "type": "Double"
+                    "dataType": "Float"
                 },
                 {
-                    "name": "timestamp",
-                    "jname": "タイムスタンプ",
-                    "connid": "timestamp",
+                    "propertyInformation": {
+                        "name": "timestamp",
+                        "label": "撮影時刻",
+                        "unit": ""
+                    },
                     "show": True,
+                    "necessary": False,
                     "description": "Image timestamp (ISO8601)",
-                    "type": "String"
+                    "dataType": "Datetime"
+                },
+                {
+                    "propertyInformation": {
+                        "name": "_attachedFiles",
+                        "label": "添付ファイル",
+                        "unit": ""
+                    },
+                    "show": True,
+                    "necessary": False,
+                    "description": "",
+                    "dataType": "Array",
+                    "elements": [
+                        {
+                            "propertyInformation": {
+                                "name": "filename",
+                                "label": "ファイル名",
+                                "unit": ""
+                            },
+                            "show": False,
+                            "necessary": True,
+                            "description": "",
+                            "dataType": "String"
+                        },
+                        {
+                            "propertyInformation": {
+                                "name": "filetype",
+                                "label": "ファイルタイプ",
+                                "unit": ""
+                            },
+                            "show": False,
+                            "necessary": True,
+                            "description": "",
+                            "dataType": "String"
+                        }
+                    ]
                 }
             ]
+
+        # Build legacy columns array for backward compatibility
+        columns = [
+            {
+                "name": "filename",
+                "jname": "ファイル名",
+                "connid": "filename",
+                "show": True,
+                "description": "Image filename",
+                "type": "String"
+            },
+            {
+                "name": "heading",
+                "jname": "撮影方向",
+                "connid": "heading",
+                "show": True,
+                "description": "Camera heading angle (0=North, 90=East, 180=South, 270=West)",
+                "type": "Double"
+            },
+            {
+                "name": "timestamp",
+                "jname": "撮影時刻",
+                "connid": "timestamp",
+                "show": True,
+                "description": "Image timestamp (ISO8601)",
+                "type": "String"
+            }
+        ]
+
+        # Return hybrid format: SIP4D-ZIP v2 + legacy compatibility
+        return {
+            # SIP4D-ZIP v2 format
+            "informationTypeCode": "universal",
+            "schemaVersion": "1.0",
+            "geometryType": "Point",
+            "elements": elements,
+            # Legacy format for backward compatibility
+            "version": "1",
+            "code": "99-999-99",
+            "num_column": 3,
+            "columns": columns
         }
 
     def create_metadata(self):
