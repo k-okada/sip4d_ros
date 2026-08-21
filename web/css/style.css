@@ -326,27 +326,18 @@ header p {
     border-radius: 0;
 }
 
-/* Debug Panel */
-.debug-info {
-    padding: 12px;
-    background: #f0f0f0;
-    border-radius: 6px;
-    font-size: 12px;
-    line-height: 1.8;
-    font-family: 'Courier New', monospace;
-}
-
-.debug-info div {
-    margin-bottom: 6px;
-    padding: 4px;
-    background: white;
-    border-radius: 3px;
-}
-
-.debug-info strong {
+/* Data Info list */
+.data-info h3 {
+    font-size: 14px;
     color: var(--primary-color);
-    min-width: 100px;
-    display: inline-block;
+    margin-top: 15px;
+    margin-bottom: 10px;
+}
+
+.data-info .feature-list {
+    background: white;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
 }
 
 @media (max-width: 768px) {

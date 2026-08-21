@@ -12,27 +12,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Setup event listeners
     setupEventListeners();
 
-    // Initialize debug panel
-    updateDebugInfo();
-
     // Load sample data if available
     loadSampleData();
 });
-
-function updateDebugInfo() {
-    const version = document.querySelector('header p:last-of-type')?.textContent || 'N/A';
-    document.getElementById('versionDebug').textContent = version.replace('Version: ', '');
-
-    // Update periodically
-    setInterval(() => {
-        document.getElementById('markerCount').textContent = mapManager?.markers?.length || 0;
-        document.getElementById('featureCount').textContent = dataLoader?.geojsonData?.features?.length || 0;
-        document.getElementById('imageCount').textContent = dataLoader?.imageMap?.size || 0;
-        if (mapManager?.map) {
-            document.getElementById('mapZoom').textContent = mapManager.map.getZoom();
-        }
-    }, 500);
-}
 
 function setupEventListeners() {
     // Upload button
@@ -81,20 +63,56 @@ async function handleZipUpload(event) {
             mapManager.addMarkersFromGeoJSON(result.geojsonData, dataLoader);
         }
 
-        // Display metadata
+        // Display metadata and image list
         let metadataHtml = `<strong>✅ データを読み込みました</strong>`;
 
         if (dataLoader.zipFilename) {
             metadataHtml += `<p><strong>ファイル:</strong> ${dataLoader.zipFilename}</p>`;
         }
 
-        metadataHtml += `<p><strong>フィーチャー数:</strong> ${result.geojsonData?.features?.length || 0}</p>`;
+        const featureCount = result.geojsonData?.features?.length || 0;
+        metadataHtml += `<p><strong>フィーチャー数:</strong> ${featureCount}</p>`;
 
         if (result.metadata) {
             metadataHtml += dataLoader.formatMetadata();
         }
 
+        // Add feature list
+        if (featureCount > 0) {
+            metadataHtml += `<h3 style="margin-top: 15px; font-size: 14px;">📸 画像リスト</h3>`;
+            metadataHtml += `<div class="feature-list" style="max-height: 200px; overflow-y: auto;">`;
+
+            result.geojsonData.features.forEach((feature, index) => {
+                const filename = feature.properties?.filename || `画像 ${index + 1}`;
+                const heading = feature.properties?.heading || 0;
+                let directionText = '不明';
+                if (heading >= 315 || heading < 45) directionText = '北';
+                else if (heading >= 45 && heading < 135) directionText = '東';
+                else if (heading >= 135 && heading < 225) directionText = '南';
+                else if (heading >= 225 && heading < 315) directionText = '西';
+
+                metadataHtml += `
+                    <div class="feature-list-item" onclick="mapManager.markers[${index}] && mapManager.markers[${index}].fireEvent('click')">
+                        <div style="cursor: pointer; padding: 8px; background: #f9f9f9; border-radius: 4px; margin-bottom: 4px; border-left: 3px solid var(--primary-color);">
+                            <strong>${filename}</strong>
+                            <span style="float: right; font-size: 12px; color: #666;">${directionText}</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            metadataHtml += `</div>`;
+        }
+
         dataInfo.innerHTML = metadataHtml;
+
+        // Debug info to console
+        console.log('=== SIP4D-ZIP ロード完了 ===');
+        console.log(`ファイル: ${dataLoader.zipFilename}`);
+        console.log(`フィーチャー数: ${featureCount}`);
+        console.log(`マーカー数: ${mapManager.markers.length}`);
+        console.log(`画像ディレクトリ: ${result.imageDirectory}`);
+        console.log('Features:', result.geojsonData.features);
 
         uploadBtn.textContent = 'ZIP ファイルをアップロード';
         uploadBtn.disabled = false;
