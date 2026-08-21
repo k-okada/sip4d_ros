@@ -175,10 +175,11 @@ class MapManager {
         try {
             const imageUrl = await this.dataLoader.getImageUrl(imagePath);
             if (imageUrl) {
-                const preview = document.getElementById('imagePreview');
-                const img = document.getElementById('previewImage');
+                // 左パネルの詳細情報エリアに画像を表示
+                const imageContainer = document.getElementById('featureImageContainer');
+                const img = document.getElementById('featureImage');
                 img.src = imageUrl;
-                preview.style.display = 'block';
+                imageContainer.style.display = 'block';
             }
         } catch (error) {
             console.error('画像の読み込みに失敗しました:', error);
