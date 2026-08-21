@@ -1,0 +1,53 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [138.2529, 36.2048]
+      },
+      "properties": {
+        "filename": "image_001.jpg",
+        "heading": 0,
+        "timestamp": "2026-08-22T10:00:00Z"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [138.2600, 36.2100]
+      },
+      "properties": {
+        "filename": "image_002.jpg",
+        "heading": 90,
+        "timestamp": "2026-08-22T10:05:00Z"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [138.2450, 36.2150]
+      },
+      "properties": {
+        "filename": "image_003.jpg",
+        "heading": 180,
+        "timestamp": "2026-08-22T10:10:00Z"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [138.2350, 36.2000]
+      },
+      "properties": {
+        "filename": "image_004.jpg",
+        "heading": 270,
+        "timestamp": "2026-08-22T10:15:00Z"
+      }
+    }
+  ]
+}

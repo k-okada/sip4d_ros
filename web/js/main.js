@@ -64,18 +64,19 @@ async function handleZipUpload(event) {
         }
 
         // Display metadata
-        if (result.metadata) {
-            dataInfo.innerHTML = `
-                <strong>✅ データを読み込みました</strong>
-                ${dataLoader.formatMetadata()}
-                <p><strong>フィーチャー数:</strong> ${result.geojsonData?.features?.length || 0}</p>
-            `;
-        } else {
-            dataInfo.innerHTML = `
-                <strong>✅ データを読み込みました</strong>
-                <p><strong>フィーチャー数:</strong> ${result.geojsonData?.features?.length || 0}</p>
-            `;
+        let metadataHtml = `<strong>✅ データを読み込みました</strong>`;
+
+        if (dataLoader.zipFilename) {
+            metadataHtml += `<p><strong>ファイル:</strong> ${dataLoader.zipFilename}</p>`;
         }
+
+        metadataHtml += `<p><strong>フィーチャー数:</strong> ${result.geojsonData?.features?.length || 0}</p>`;
+
+        if (result.metadata) {
+            metadataHtml += dataLoader.formatMetadata();
+        }
+
+        dataInfo.innerHTML = metadataHtml;
 
         uploadBtn.textContent = 'ZIP ファイルをアップロード';
         uploadBtn.disabled = false;

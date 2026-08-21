@@ -71,6 +71,9 @@ class MapManager {
         if (this.markers.length > 0) {
             this.map.fitBounds(bounds, 50);
         }
+
+        // フィーチャーリストを表示
+        this.displayFeatureList();
     }
 
     selectMarker(marker) {
@@ -187,5 +190,55 @@ class MapManager {
         const bounds = new google.maps.LatLngBounds();
         this.markers.forEach(marker => bounds.extend(marker.getPosition()));
         this.map.fitBounds(bounds);
+    }
+
+    displayFeatureList() {
+        const listContainer = document.getElementById('featureList');
+        if (!listContainer) {
+            // フィーチャーリスト用のコンテナを作成
+            const newContainer = document.createElement('div');
+            newContainer.id = 'featureList';
+            newContainer.className = 'feature-list-container';
+            document.querySelector('.sidebar').appendChild(newContainer);
+            this.displayFeatureList(); // 再帰呼び出し
+            return;
+        }
+
+        let html = '<h3>📍 GPS 画像位置</h3>';
+        html += '<div class="feature-list">';
+
+        if (!this.geojsonData || this.geojsonData.features.length === 0) {
+            html += '<p style="color: #999;">フィーチャーがありません</p>';
+        } else {
+            this.geojsonData.features.forEach((feature, index) => {
+                const filename = feature.properties?.filename || `画像 ${index + 1}`;
+                const timestamp = feature.properties?.timestamp || '-';
+                const [lng, lat] = feature.geometry.coordinates;
+                const heading = feature.properties?.heading || 0;
+
+                // 方向のテキスト表現
+                let directionText = '不明';
+                if (heading >= 315 || heading < 45) directionText = '北';
+                else if (heading >= 45 && heading < 135) directionText = '東';
+                else if (heading >= 135 && heading < 225) directionText = '南';
+                else if (heading >= 225 && heading < 315) directionText = '西';
+
+                html += `
+                    <div class="feature-list-item" data-index="${index}" onclick="mapManager.selectMarker(mapManager.markers[${index}])">
+                        <div class="feature-list-item-header">
+                            <strong>${filename}</strong>
+                            <span class="direction-badge">${directionText}</span>
+                        </div>
+                        <div class="feature-list-item-meta">
+                            <div>📍 ${lat.toFixed(4)}, ${lng.toFixed(4)}</div>
+                            <div>🕐 ${timestamp}</div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        html += '</div>';
+        listContainer.innerHTML = html;
     }
 }

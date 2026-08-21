@@ -3,6 +3,7 @@ class DataLoader {
         this.geojsonData = null;
         this.metadata = null;
         this.imageDirectory = null;
+        this.zipFilename = null;
     }
 
     async loadFromZip(zipFile) {
@@ -11,6 +12,9 @@ class DataLoader {
             if (typeof JSZip === 'undefined') {
                 throw new Error('JSZip ライブラリが読み込まれていません');
             }
+
+            // ファイル名を保存
+            this.zipFilename = zipFile.name;
 
             const zip = new JSZip();
             const zipData = await JSZip.external.Promise.resolve(zipFile).then(file => {
@@ -31,14 +35,28 @@ class DataLoader {
                 this.metadata = JSON.parse(metaText);
             }
 
-            // GeoJSON を読み込む
-            const geojsonFiles = Object.keys(zip.files).filter(name => 
-                name.endsWith('.geojson') && !name.includes('/')
-            );
+            // GeoJSON を読み込む（images/features.geojson または他の .geojson ファイル）
+            let geojsonText = null;
 
-            if (geojsonFiles.length > 0) {
-                const geojsonText = await zip.file(geojsonFiles[0]).async('text');
+            // まず images/features.geojson を探す
+            let geoFile = zip.file('images/features.geojson');
+            if (geoFile) {
+                geojsonText = await geoFile.async('text');
+            } else {
+                // 他の .geojson ファイルを探す
+                const geojsonFiles = Object.keys(zip.files).filter(name =>
+                    name.endsWith('.geojson')
+                );
+                if (geojsonFiles.length > 0) {
+                    geojsonText = await zip.file(geojsonFiles[0]).async('text');
+                }
+            }
+
+            if (geojsonText) {
                 this.geojsonData = JSON.parse(geojsonText);
+            } else {
+                console.warn('GeoJSON ファイルが見つかりません');
+                this.geojsonData = { type: 'FeatureCollection', features: [] };
             }
 
             // 画像ディレクトリを特定

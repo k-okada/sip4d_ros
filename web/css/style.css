@@ -239,6 +239,77 @@ header p {
     background: #999;
 }
 
+/* Feature List Styling */
+.feature-list-container {
+    padding: 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.feature-list-container h3 {
+    font-size: 16px;
+    margin-bottom: 15px;
+    color: var(--primary-color);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.feature-list {
+    max-height: 300px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.feature-list-item {
+    padding: 12px;
+    background: #f9f9f9;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.feature-list-item:hover {
+    background: var(--secondary-color);
+    color: white;
+    border-color: var(--primary-color);
+    transform: translateX(4px);
+    box-shadow: var(--shadow);
+}
+
+.feature-list-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.direction-badge {
+    background: var(--accent-color);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.feature-list-item:hover .direction-badge {
+    background: rgba(255,255,255,0.3);
+}
+
+.feature-list-item-meta {
+    font-size: 12px;
+    opacity: 0.8;
+    line-height: 1.4;
+}
+
+.feature-list-item:hover .feature-list-item-meta {
+    opacity: 1;
+}
+
 @media (max-width: 768px) {
     .content {
         flex-direction: column;
@@ -259,5 +330,9 @@ header p {
         top: 10px;
         right: 10px;
         max-width: 200px;
+    }
+
+    .feature-list {
+        max-height: 150px;
     }
 }
