@@ -76,7 +76,7 @@ class MapManager {
         this.displayFeatureList();
     }
 
-    selectMarker(marker) {
+    async selectMarker(marker) {
         // 前のマーカーを非選択
         if (this.selectedMarker) {
             this.selectedMarker.setAnimation(null);
@@ -86,7 +86,7 @@ class MapManager {
         marker.setAnimation(google.maps.Animation.BOUNCE);
 
         // 詳細情報を表示
-        this.showFeatureDetails(marker.featureData);
+        await this.showFeatureDetails(marker.featureData);
 
         // 地図をマーカーにパン
         this.map.panTo(marker.getPosition());
@@ -112,7 +112,7 @@ class MapManager {
         };
     }
 
-    showFeatureDetails(feature) {
+    async showFeatureDetails(feature) {
         const featureInfoDiv = document.getElementById('featureInfo');
         let html = `<h3>${feature.properties?.filename || 'Information'}</h3>`;
 
@@ -150,7 +150,7 @@ class MapManager {
         if (this.dataLoader) {
             const imagePath = this.dataLoader.getFeatureImage(feature);
             if (imagePath) {
-                this.loadImagePreviewInSidebar(imagePath, html, featureInfoDiv);
+                await this.loadImagePreviewInSidebar(imagePath, html, featureInfoDiv);
                 return; // 画像読み込み後に表示するため、ここで終了
             }
         }
