@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SIP4D-ZIP ビューア - 防災画像地図</title>
     <link rel="stylesheet" href="css/style.css">
+    <!-- Leaflet.js (Google Maps の代替) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+    <style>
+        .map { background: #ddd; }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -42,12 +47,16 @@
         </div>
     </div>
 
-    <!-- Google Maps API -->
-    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY"></script>
+    <!-- Required Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 
     <!-- Application Scripts -->
     <script src="js/data-loader.js"></script>
-    <script src="js/map.js"></script>
+    <script src="js/map-leaflet.js"></script>
     <script src="js/main.js"></script>
+
+    <!-- Optional: Google Maps (uncomment if API key is available) -->
+    <!-- <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY"></script> -->
 </body>
 </html>

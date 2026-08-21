@@ -6,24 +6,44 @@ class MapManager {
         this.geojsonData = null;
         this.dataLoader = null;
         this.selectedMarker = null;
-        this.infoWindows = [];
     }
 
     initializeMap() {
         // デフォルト位置（日本）
-        const defaultCenter = { lat: 36.2048, lng: 138.2529 };
+        const defaultCenter = [36.2048, 138.2529];
 
-        this.map = new google.maps.Map(this.mapElement, {
-            zoom: 10,
-            center: defaultCenter,
-            mapTypeId: 'satellite',
-            fullscreenControl: true,
-            zoomControl: true,
-            mapTypeControl: true,
-            scaleControl: true,
-            streetViewControl: false,
-            rotateControl: false
-        });
+        this.map = L.map(this.mapElement).setView(defaultCenter, 10);
+
+        // タイルレイヤーを追加（OpenStreetMap）
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19,
+            maxNativeZoom: 18
+        }).addTo(this.map);
+
+        // 衛星画像レイヤーを追加（USGS Satellite）
+        const satelliteLayer = L.tileLayer(
+            'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+            {
+                attribution: 'Tiles &copy; Esri',
+                maxZoom: 18,
+                maxNativeZoom: 17
+            }
+        );
+
+        // レイヤーコントロール
+        L.control.layers(
+            {
+                '地図': L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap',
+                    maxZoom: 19,
+                    maxNativeZoom: 18
+                }),
+                '衛星画像': satelliteLayer
+            }
+        ).addTo(this.map);
+
+        satelliteLayer.addTo(this.map);
     }
 
     addMarkersFromGeoJSON(geojsonData, dataLoader) {
@@ -35,78 +55,75 @@ class MapManager {
             return;
         }
 
-        const bounds = new google.maps.LatLngBounds();
+        const group = L.featureGroup();
 
         geojsonData.features.forEach((feature, index) => {
             if (feature.geometry.type === 'Point') {
                 const [lng, lat] = feature.geometry.coordinates;
-                const position = { lat, lng };
+                const heading = feature.properties?.heading || 0;
 
-                bounds.extend(position);
-
-                const marker = new google.maps.Marker({
-                    position,
-                    map: this.map,
-                    title: feature.properties?.filename || `マーカー ${index + 1}`,
-                    icon: this.getMarkerIcon(feature),
-                    optimized: false
+                // マーカーアイコンを作成
+                const color = this.getColorByHeading(heading);
+                const icon = L.icon({
+                    iconUrl: this.createMarkerSVG(color),
+                    iconSize: [32, 32],
+                    iconAnchor: [16, 16],
+                    popupAnchor: [0, -16],
+                    className: 'custom-marker'
                 });
+
+                const marker = L.marker([lat, lng], { icon })
+                    .bindPopup(feature.properties?.filename || `マーカー ${index + 1}`)
+                    .on('click', () => this.selectMarker(marker, feature))
+                    .on('mouseover', function() { this.openPopup(); })
+                    .on('mouseout', function() { this.closePopup(); });
 
                 marker.featureData = feature;
                 marker.featureIndex = index;
 
-                marker.addListener('click', () => {
-                    this.selectMarker(marker);
-                });
-
-                marker.addListener('mouseover', () => {
-                    this.showPreview(marker);
-                });
-
                 this.markers.push(marker);
+                group.addLayer(marker);
             }
         });
 
+        group.addTo(this.map);
+
         // すべてのマーカーが見えるように地図をズーム
         if (this.markers.length > 0) {
-            this.map.fitBounds(bounds, 50);
+            this.map.fitBounds(group.getBounds(), { padding: [50, 50] });
         }
     }
 
-    selectMarker(marker) {
-        // 前のマーカーを非選択
+    selectMarker(marker, feature) {
+        // 前のマーカーをリセット
         if (this.selectedMarker) {
-            this.selectedMarker.setAnimation(null);
+            this.selectedMarker.setOpacity(0.8);
         }
 
         this.selectedMarker = marker;
-        marker.setAnimation(google.maps.Animation.BOUNCE);
+        marker.setOpacity(1);
 
         // 詳細情報を表示
-        this.showFeatureDetails(marker.featureData);
+        this.showFeatureDetails(feature);
 
         // 地図をマーカーにパン
-        this.map.panTo(marker.getPosition());
+        this.map.panTo(marker.getLatLng());
     }
 
-    getMarkerIcon(feature) {
-        // 方位角によって色分け
-        const heading = feature.properties?.heading || 0;
-        let color = 'FF0000'; // デフォルト赤
+    getColorByHeading(heading) {
+        if (heading >= 315 || heading < 45) return '#FF0000'; // 北 - 赤
+        else if (heading >= 45 && heading < 135) return '#FFAA00'; // 東 - オレンジ
+        else if (heading >= 135 && heading < 225) return '#0066FF'; // 南 - 青
+        else if (heading >= 225 && heading < 315) return '#00AA00'; // 西 - 緑
+        return '#808080'; // グレー（デフォルト）
+    }
 
-        if (heading >= 315 || heading < 45) color = 'FF0000'; // 北 - 赤
-        else if (heading >= 45 && heading < 135) color = 'FFAA00'; // 東 - オレンジ
-        else if (heading >= 135 && heading < 225) color = '0066FF'; // 南 - 青
-        else if (heading >= 225 && heading < 315) color = '00AA00'; // 西 - 緑
-
-        return {
-            path: google.maps.SymbolPath.CIRCLE,
-            scale: 8,
-            fillColor: `#${color}`,
-            fillOpacity: 0.8,
-            strokeColor: '#fff',
-            strokeWeight: 2
-        };
+    createMarkerSVG(color) {
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32">
+            <circle cx="12" cy="12" r="10" fill="${color}" stroke="white" stroke-width="2"/>
+            <circle cx="12" cy="12" r="6" fill="white" opacity="0.3"/>
+        </svg>`;
+        return 'data:image/svg+xml;base64,' + btoa(svg);
     }
 
     showFeatureDetails(feature) {
@@ -168,24 +185,14 @@ class MapManager {
         }
     }
 
-    showPreview(marker) {
-        // マウスオーバー時の簡易プレビュー（オプション）
-        const title = marker.getTitle();
-        marker.setTitle(`${title} (クリックで詳細表示)`);
-    }
-
     clearMarkers() {
-        this.markers.forEach(marker => marker.setMap(null));
+        this.markers.forEach(marker => this.map.removeLayer(marker));
         this.markers = [];
-        this.infoWindows.forEach(iw => iw.close());
-        this.infoWindows = [];
     }
 
     fitBounds() {
         if (this.markers.length === 0) return;
-
-        const bounds = new google.maps.LatLngBounds();
-        this.markers.forEach(marker => bounds.extend(marker.getPosition()));
-        this.map.fitBounds(bounds);
+        const group = L.featureGroup(this.markers);
+        this.map.fitBounds(group.getBounds());
     }
 }

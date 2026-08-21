@@ -1,117 +1,122 @@
-/**
- * SIP4D-ZIP データロード機能
- */
-
 class DataLoader {
     constructor() {
-        this.data = null;
+        this.geojsonData = null;
         this.metadata = null;
-        this.features = [];
-        this.imageMap = new Map();
+        this.imageDirectory = null;
     }
 
-    /**
-     * ZIP ファイルからデータを抽出
-     */
-    async loadZipFile(file) {
+    async loadFromZip(zipFile) {
         try {
-            // JSZip ライブラリを動的にロード
+            // NOTE: This requires JSZip library to be loaded
             if (typeof JSZip === 'undefined') {
-                await this.loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+                throw new Error('JSZip ライブラリが読み込まれていません');
             }
 
             const zip = new JSZip();
-            const zipData = await zip.loadAsync(file);
+            const zipData = await JSZip.external.Promise.resolve(zipFile).then(file => {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = e => resolve(e.target.result);
+                    reader.onerror = reject;
+                    reader.readAsArrayBuffer(file);
+                });
+            });
 
-            // メタデータロード
-            const metaFile = zipData.file('sip4d_zip_meta.json');
+            await zip.loadAsync(zipData);
+
+            // メタデータを読み込む
+            const metaFile = zip.file('sip4d_zip_meta.json');
             if (metaFile) {
-                const metaContent = await metaFile.async('string');
-                this.metadata = JSON.parse(metaContent);
-                console.log('メタデータ:', this.metadata);
+                const metaText = await metaFile.async('text');
+                this.metadata = JSON.parse(metaText);
             }
 
-            // GeoJSON ロード
-            const geoJsonFile = zipData.file('images/features.geojson');
-            if (geoJsonFile) {
-                const geoJsonContent = await geoJsonFile.async('string');
-                const geoJson = JSON.parse(geoJsonContent);
-                this.features = geoJson.features || [];
-                console.log('地物:', this.features.length);
+            // GeoJSON を読み込む
+            const geojsonFiles = Object.keys(zip.files).filter(name => 
+                name.endsWith('.geojson') && !name.includes('/')
+            );
+
+            if (geojsonFiles.length > 0) {
+                const geojsonText = await zip.file(geojsonFiles[0]).async('text');
+                this.geojsonData = JSON.parse(geojsonText);
             }
 
-            // 画像ファイルをマップに登録
-            zipData.folder('images/files').forEach((relativePath, file) => {
-                if (relativePath.match(/\.(jpg|jpeg|png|gif)$/i)) {
-                    file.async('blob').then(blob => {
-                        const url = URL.createObjectURL(blob);
-                        this.imageMap.set(relativePath, url);
-                    });
+            // 画像ディレクトリを特定
+            const imageDirs = new Set();
+            Object.keys(zip.files).forEach(name => {
+                if (/\.(jpg|jpeg|png)$/i.test(name)) {
+                    const dir = name.substring(0, name.lastIndexOf('/'));
+                    if (dir) imageDirs.add(dir);
                 }
             });
 
+            this.imageDirectory = imageDirs.size > 0 ? Array.from(imageDirs)[0] : null;
+            this.zipInstance = zip;
+
             return {
                 metadata: this.metadata,
-                features: this.features,
-                imageCount: this.imageMap.size
+                geojsonData: this.geojsonData,
+                imageDirectory: this.imageDirectory
             };
-
         } catch (error) {
-            console.error('ZIP ファイル読み込みエラー:', error);
+            console.error('ZIP ファイルの読み込みに失敗しました:', error);
             throw error;
         }
     }
 
-    /**
-     * 外部スクリプトをロード
-     */
-    loadScript(url) {
-        return new Promise((resolve, reject) => {
-            const script = document.createElement('script');
-            script.src = url;
-            script.onload = resolve;
-            script.onerror = reject;
-            document.head.appendChild(script);
-        });
+    async getImageUrl(imagePath) {
+        if (!this.zipInstance) {
+            throw new Error('ZIP ファイルが読み込まれていません');
+        }
+
+        try {
+            const file = this.zipInstance.file(imagePath);
+            if (!file) {
+                return null;
+            }
+
+            const blob = await file.async('blob');
+            return URL.createObjectURL(blob);
+        } catch (error) {
+            console.error(`画像の読み込みに失敗しました: ${imagePath}`, error);
+            return null;
+        }
     }
 
-    /**
-     * 地物の画像 URL を取得
-     */
-    getImageUrl(feature) {
-        if (!feature.properties || !feature.properties._attachedFiles) {
+    getFeatureImage(feature) {
+        if (!feature.properties) {
             return null;
         }
 
-        const attachedFiles = Array.isArray(feature.properties._attachedFiles)
-            ? feature.properties._attachedFiles
-            : [feature.properties._attachedFiles];
-
-        if (attachedFiles.length > 0) {
-            const filename = attachedFiles[0].filename;
-            return this.imageMap.get(`images/files/${filename}`) ||
-                   this.imageMap.get(filename);
+        // ファイル名プロパティから画像を取得
+        const filename = feature.properties.filename;
+        if (!filename || !this.imageDirectory) {
+            return null;
         }
 
-        return null;
+        return `${this.imageDirectory}/${filename}`;
     }
 
-    /**
-     * メタデータ情報を取得
-     */
-    getMetadataInfo() {
+    formatMetadata() {
         if (!this.metadata) return '';
 
-        const info = [
-            `タイトル: ${this.metadata.title || 'N/A'}`,
-            `バージョン: ${this.metadata.version || 'N/A'}`,
-            `地物数: ${this.features.length}`,
-            `更新日時: ${this.metadata.updated || 'N/A'}`
-        ];
+        const {
+            code = '-',
+            title = '-',
+            creator = '-',
+            informationDate = '-',
+            flag = '試験',
+            disaster = '-',
+            payloadType = '-'
+        } = this.metadata;
 
-        return info.join('<br>');
+        return `
+            <p><strong>コード:</strong> ${code}</p>
+            <p><strong>タイトル:</strong> ${title}</p>
+            <p><strong>著作者:</strong> ${creator}</p>
+            <p><strong>情報日時:</strong> ${informationDate}</p>
+            <p><strong>ペイロード:</strong> ${payloadType}</p>
+            <p><strong>フラグ:</strong> ${flag}</p>
+        `;
     }
 }
-
-// グローバルオブジェクトとして公開
-window.dataLoader = new DataLoader();
