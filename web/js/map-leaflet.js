@@ -73,7 +73,6 @@ class MapManager {
                 });
 
                 const marker = L.marker([lat, lng], { icon })
-                    .bindPopup(feature.properties?.filename || `マーカー ${index + 1}`)
                     .on('click', () => this.selectMarker(marker, feature))
                     .on('mouseover', () => this.onMarkerHover(marker, feature))
                     .on('mouseout', () => this.onMarkerLeave(marker));
@@ -197,21 +196,35 @@ class MapManager {
         this.map.fitBounds(group.getBounds());
     }
 
-    onMarkerHover(marker, feature) {
-        marker.openPopup();
+    async onMarkerHover(marker, feature) {
+        const filename = feature.properties?.filename || 'Image';
 
         // マーカー上に画像を表示
         if (this.dataLoader) {
-            this.loadImagePreview(this.dataLoader.getFeatureImage(feature));
+            const imagePath = this.dataLoader.getFeatureImage(feature);
+            if (imagePath) {
+                try {
+                    const imageUrl = await this.dataLoader.getImageUrl(imagePath);
+                    if (imageUrl) {
+                        // popup コンテンツを作成
+                        const popupContent = `
+                            <div style="width: 280px; padding: 8px; text-align: center;">
+                                <img src="${imageUrl}" style="width: 100%; height: auto; border-radius: 8px; max-height: 300px;">
+                                <p style="margin-top: 8px; font-size: 12px; color: #666;">${filename}</p>
+                            </div>
+                        `;
+
+                        marker.setPopupContent(popupContent);
+                        marker.openPopup();
+                    }
+                } catch (error) {
+                    console.error('画像読み込みエラー:', error);
+                }
+            }
         }
     }
 
     onMarkerLeave(marker) {
         marker.closePopup();
-        // マーカーを離れたら画像を非表示
-        const featureImageContainer = document.getElementById('featureImageContainer');
-        if (featureImageContainer && !featureImageContainer.dataset.locked) {
-            featureImageContainer.style.display = 'none';
-        }
     }
 }
