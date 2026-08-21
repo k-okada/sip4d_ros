@@ -149,9 +149,15 @@ class MapManager {
         // 画像をここに表示
         if (this.dataLoader) {
             const imagePath = this.dataLoader.getFeatureImage(feature);
+            console.log('Image path:', imagePath);
+            console.log('Image directory:', this.dataLoader.imageDirectory);
+            console.log('Filename:', feature.properties?.filename);
             if (imagePath) {
+                console.log('Loading image:', imagePath);
                 await this.loadImagePreviewInSidebar(imagePath, html, featureInfoDiv);
                 return; // 画像読み込み後に表示するため、ここで終了
+            } else {
+                console.warn('No image path found for feature');
             }
         }
 
