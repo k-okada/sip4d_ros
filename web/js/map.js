@@ -121,7 +121,7 @@ class MapManager {
                 <div class="feature-property">
                     <div class="property-label">座標</div>
                     <div class="property-value">
-                        ${feature.geometry.coordinates[1].toFixed(6)}, 
+                        ${feature.geometry.coordinates[1].toFixed(6)},
                         ${feature.geometry.coordinates[0].toFixed(6)}
                     </div>
                 </div>
@@ -146,14 +146,35 @@ class MapManager {
             }
         }
 
-        featureInfoDiv.innerHTML = html;
-
-        // 画像をプレビュー表示
+        // 画像をここに表示
         if (this.dataLoader) {
             const imagePath = this.dataLoader.getFeatureImage(feature);
             if (imagePath) {
-                this.loadImagePreview(imagePath);
+                this.loadImagePreviewInSidebar(imagePath, html, featureInfoDiv);
+                return; // 画像読み込み後に表示するため、ここで終了
             }
+        }
+
+        featureInfoDiv.innerHTML = html;
+    }
+
+    async loadImagePreviewInSidebar(imagePath, infoHtml, container) {
+        try {
+            const imageUrl = await this.dataLoader.getImageUrl(imagePath);
+            if (imageUrl) {
+                // 画像を詳細パネルに表示
+                const imageSection = `
+                    <div class="feature-image-section">
+                        <img src="${imageUrl}" alt="Preview" class="feature-image-preview">
+                    </div>
+                `;
+                container.innerHTML = infoHtml + imageSection;
+            } else {
+                container.innerHTML = infoHtml;
+            }
+        } catch (error) {
+            console.error('画像の読み込みに失敗しました:', error);
+            container.innerHTML = infoHtml;
         }
     }
 

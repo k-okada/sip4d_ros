@@ -310,6 +310,22 @@ header p {
     opacity: 1;
 }
 
+/* Feature Image in Sidebar */
+.feature-image-section {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid var(--border-color);
+}
+
+.feature-image-preview {
+    width: 100%;
+    height: auto;
+    border-radius: 6px;
+    box-shadow: var(--shadow);
+    max-height: 300px;
+    object-fit: cover;
+}
+
 @media (max-width: 768px) {
     .content {
         flex-direction: column;
