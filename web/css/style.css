@@ -94,7 +94,7 @@ header p {
     width: 380px;
     background: var(--bg-card);
     border-radius: 16px;
-    overflow-y: auto;
+    overflow: hidden;
     box-shadow: var(--shadow-lg);
     display: flex;
     flex-direction: column;
@@ -105,12 +105,30 @@ header p {
 .panel {
     padding: 20px;
     border-bottom: 1px solid var(--border);
+    overflow-y: auto;
 }
 
-.panel:last-child {
-    border-bottom: none;
+.panel-data {
+    flex: 0 0 auto;
+    max-height: 200px;
+}
+
+.panel-detail {
     flex: 1;
-    overflow-y: auto;
+    min-height: 200px;
+    border-bottom: none;
+}
+
+.sidebar-resizer {
+    height: 4px;
+    background: linear-gradient(180deg, transparent 0%, var(--border) 50%, transparent 100%);
+    cursor: row-resize;
+    transition: background 0.2s;
+    flex-shrink: 0;
+}
+
+.sidebar-resizer:hover {
+    background: linear-gradient(180deg, transparent 0%, var(--primary-light) 50%, transparent 100%);
 }
 
 .panel h2 {

@@ -21,7 +21,7 @@
 
         <div class="content">
             <aside class="sidebar">
-                <div class="panel">
+                <div class="panel panel-data" id="panelData">
                     <h2>📁 データ管理</h2>
                     <div class="data-upload">
                         <input type="file" id="zipUpload" accept=".zip" style="display:none;">
@@ -30,7 +30,9 @@
                     <div id="dataInfo" class="data-info"></div>
                 </div>
 
-                <div class="panel">
+                <div class="sidebar-resizer" id="sidebarResizer"></div>
+
+                <div class="panel panel-detail" id="panelDetail">
                     <div id="featureImageContainer" class="feature-image-container" style="display:none;">
                         <img id="featureImage" src="" alt="Feature Image" class="feature-image">
                     </div>

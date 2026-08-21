@@ -27,16 +27,40 @@ function setupEventListeners() {
 
     zipUpload.addEventListener('change', handleZipUpload);
 
-    // Close preview button
-    const closePreview = document.getElementById('closePreview');
-    closePreview.addEventListener('click', () => {
-        document.getElementById('imagePreview').style.display = 'none';
-    });
+    // Sidebar resizer
+    setupSidebarResizer();
+}
 
-    // Image preview click to enlarge
-    const previewImage = document.getElementById('previewImage');
-    previewImage.addEventListener('click', () => {
-        window.open(previewImage.src, '_blank');
+function setupSidebarResizer() {
+    const resizer = document.getElementById('sidebarResizer');
+    const sidebar = document.querySelector('.sidebar');
+    const panelData = document.getElementById('panelData');
+    const panelDetail = document.getElementById('panelDetail');
+
+    let isResizing = false;
+
+    resizer.addEventListener('mousedown', (e) => {
+        isResizing = true;
+        const startY = e.clientY;
+        const startDataHeight = panelData.offsetHeight;
+
+        const handleMouseMove = (e) => {
+            if (!isResizing) return;
+
+            const delta = e.clientY - startY;
+            const newDataHeight = Math.max(120, Math.min(startDataHeight + delta, sidebar.offsetHeight - 220));
+
+            panelData.style.maxHeight = newDataHeight + 'px';
+        };
+
+        const handleMouseUp = () => {
+            isResizing = false;
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        };
+
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
     });
 }
 
