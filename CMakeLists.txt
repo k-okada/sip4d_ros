@@ -7,8 +7,6 @@ catkin_package()
 
 # Install scripts
 catkin_install_python(PROGRAMS
-  scripts/create_sip4d_zip.py
-  scripts/create_drone_sip4d_zip.py
   scripts/bag2sip4d_converter.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
