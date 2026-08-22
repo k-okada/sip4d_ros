@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="bagfile" default="$(find sip4d_ros)/sequence03.bag" />
+  <arg name="output_dir" default="/tmp/sip4d_output" />
+  <arg name="rate" default="50.0" doc="Playback rate (1.0 = realtime, 50.0 = 50x speed)" />
+  <arg name="gps_distance_threshold" default="20.0" doc="GPS distance threshold in meters (sample when GPS moves this far)" />
+  <arg name="heading_threshold" default="20.0" doc="Heading change threshold in degrees (sample when heading changes this much)" />
+
+  <!-- Extract drone images and create SIP4D-ZIP (start first, wait for data) -->
+  <node pkg="sip4d_ros" type="bag2sip4d_converter.py" name="bag2sip4d_converter"
+        output="screen" launch-prefix="bash -c 'sleep 1; $0 $@' ">
+    <param name="output_dir" value="$(arg output_dir)" />
+    <param name="gps_distance_threshold" value="$(arg gps_distance_threshold)" />
+    <param name="heading_threshold" value="$(arg heading_threshold)" />
+  </node>
+
+  <!-- Play bag file (respawn=false: exits when bag finishes) -->
+  <node pkg="rosbag" type="play" name="bag_player" respawn="false"
+        args="--rate=$(arg rate) $(arg bagfile)"
+        output="screen">
+  </node>
+</launch>

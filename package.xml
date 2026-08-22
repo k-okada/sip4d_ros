@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>sip4d_ros</name>
+  <version>0.1.0</version>
+  <description>Convert ROS bag files to SIP4D-ZIP format for disaster information sharing</description>
+
+  <maintainer email="sugihara@jsk.imi.i.u-tokyo.ac.jp">Kazuki Sugihara</maintainer>
+  <license>BSD</license>
+
+  <author email="sugihara@jsk.imi.i.u-tokyo.ac.jp">Kazuki Sugihara</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <!-- Runtime dependencies -->
+  <depend>rospy</depend>
+  <depend>rosbag</depend>
+  <depend>cv_bridge</depend>
+  <depend>sensor_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>geometry_msgs</depend>
+
+  <!-- Python dependencies -->
+  <exec_depend>python3-pil</exec_depend>
+
+  <export>
+    <architecture_independent/>
+  </export>
+</package>
