@@ -60,6 +60,7 @@ class MapManager {
         geojsonData.features.forEach((feature, index) => {
             if (feature.geometry.type === 'Point') {
                 const [lng, lat] = feature.geometry.coordinates;
+                console.log(`Marker ${index}: coordinates=[${lng}, ${lat}], location=[${lat}, ${lng}], heading=${feature.properties?.heading || 0}, filename=${feature.properties?.filename}`);
                 const heading = feature.properties?.heading || 0;
 
                 // マーカーアイコンを作成
