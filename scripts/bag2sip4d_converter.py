@@ -31,8 +31,7 @@ class Bag2SIP4DConverter:
         self.work_dir = os.path.join(output_dir, "work")
         os.makedirs(self.work_dir, exist_ok=True)
 
-        self.entry_dir = os.path.join(self.work_dir, "images")
-        self.files_dir = os.path.join(self.entry_dir, "files")
+        self.files_dir = os.path.join(self.work_dir, "files")
         os.makedirs(self.files_dir, exist_ok=True)
 
         self.bridge = CvBridge()
@@ -510,7 +509,7 @@ class Bag2SIP4DConverter:
             "entry": [{
                 "type": "GeoJSON",
                 "title": "Camera Images",
-                "file": "images/features.geojson",
+                "file": "features.geojson",
                 "updated": now,
                 "bbox": [self.min_lon, self.min_lat, self.max_lon, self.max_lat]
             }]
@@ -527,13 +526,13 @@ class Bag2SIP4DConverter:
 
             # Create GeoJSON
             geojson = self.create_geojson()
-            geojson_path = os.path.join(self.entry_dir, "features.geojson")
+            geojson_path = os.path.join(self.work_dir, "features.geojson")
             with open(geojson_path, 'w', encoding='utf-8') as f:
                 json.dump(geojson, f, ensure_ascii=False, indent=2)
 
             # Create schema
             schema = self.create_schema()
-            schema_path = os.path.join(self.entry_dir, "features_columns.json")
+            schema_path = os.path.join(self.work_dir, "features_columns.json")
             with open(schema_path, 'w', encoding='utf-8') as f:
                 json.dump(schema, f, ensure_ascii=False, indent=2)
 
@@ -549,12 +548,12 @@ class Bag2SIP4DConverter:
 
             with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zf:
                 zf.write(metadata_path, arcname="sip4d_zip_meta.json")
-                zf.write(geojson_path, arcname="images/features.geojson")
-                zf.write(schema_path, arcname="images/features_columns.json")
+                zf.write(geojson_path, arcname="features.geojson")
+                zf.write(schema_path, arcname="features_columns.json")
 
-                for img_file in os.listdir(self.files_dir):
+                for img_file in sorted(os.listdir(self.files_dir)):
                     img_path = os.path.join(self.files_dir, img_file)
-                    zf.write(img_path, arcname=f"images/files/{img_file}")
+                    zf.write(img_path, arcname=f"files/{img_file}")
 
             rospy.loginfo(f"✓ Created: {zip_path}")
             rospy.loginfo(f"✓ Total images: {len(self.images)}")
