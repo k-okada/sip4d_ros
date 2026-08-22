@@ -305,14 +305,13 @@ class Bag2SIP4DConverter:
             # Return default Tokyo area
             return 35.6762, 139.6503
 
-        # Find nearest timestamp in gps_data
-        gps_times = [float(k.split('.')[0]) for k in self.gps_data.keys()]
+        # Convert GPS timestamp strings to float for comparison
+        gps_times = [(float(k), k) for k in self.gps_data.keys()]
         if not gps_times:
             return 35.6762, 139.6503
 
-        nearest_time = min(gps_times, key=lambda t: abs(t - timestamp_sec))
-        nearest_key = [k for k in self.gps_data.keys()
-                       if float(k.split('.')[0]) == nearest_time][0]
+        # Find nearest timestamp (considering both seconds and nanoseconds)
+        nearest_key = min(gps_times, key=lambda t: abs(t[0] - timestamp_sec))[1]
 
         gps = self.gps_data[nearest_key]
         return gps['lat'], gps['lon']
