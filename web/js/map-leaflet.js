@@ -59,7 +59,10 @@ class MapManager {
 
         geojsonData.features.forEach((feature, index) => {
             if (feature.geometry.type === 'Point') {
-                const [lng, lat] = feature.geometry.coordinates;
+                const [coord1, coord2] = feature.geometry.coordinates;
+                // データが実は[lat, lng]で保存されている可能性があるため、そのまま使う
+                const lat = coord1;
+                const lng = coord2;
                 const heading = feature.properties?.heading || 0;
 
                 // マーカーアイコンを作成
