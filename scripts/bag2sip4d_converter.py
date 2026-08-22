@@ -31,8 +31,7 @@ class Bag2SIP4DConverter:
         self.work_dir = os.path.join(output_dir, "work")
         os.makedirs(self.work_dir, exist_ok=True)
 
-        self.entry_dir = os.path.join(self.work_dir, "images")
-        self.files_dir = os.path.join(self.entry_dir, "files")
+        self.files_dir = os.path.join(self.work_dir, "files")
         os.makedirs(self.files_dir, exist_ok=True)
 
         self.bridge = CvBridge()
@@ -203,9 +202,16 @@ class Bag2SIP4DConverter:
                 gps = self.gps_data[stamp_key]
                 lat, lon = float(gps['lat']), float(gps['lon'])
             else:
-                # Use nearest GPS data
-                lat, lon = self._get_nearest_gps(timestamp_sec)
-                lat, lon = float(lat), float(lon)
+                # Use nearest GPS data. Frames recorded before the first fix
+                # have no position, so drop them instead of placing them at a
+                # fallback coordinate.
+                nearest = self._get_nearest_gps(timestamp_sec)
+                if nearest is None:
+                    rospy.logdebug(
+                        f"Skipping frame {frame_id}: no GPS fix available yet"
+                    )
+                    return
+                lat, lon = float(nearest[0]), float(nearest[1])
 
             # Calculate heading from odometry (if available)
             heading = self._get_heading_at_time(timestamp_sec, timestamp_nsec)
@@ -266,11 +272,20 @@ class Bag2SIP4DConverter:
             rospy.logerr(f"Error processing image: {e}")
 
     def gps_callback(self, msg):
-        """Store GPS data with timestamp"""
+        """Store GPS data with timestamp, ignoring messages without a fix"""
+        # A receiver with no fix still publishes, reporting NaN or (0, 0).
+        # Those reach the GeoJSON as real points and wreck the spatial bounds
+        # the same way a hardcoded fallback would, so drop them here.
+        lat, lon = msg.latitude, msg.longitude
+        if math.isnan(lat) or math.isnan(lon):
+            return
+        if lat == 0.0 and lon == 0.0:
+            return
+
         stamp_key = f"{msg.header.stamp.secs}.{msg.header.stamp.nsecs}"
         self.gps_data[stamp_key] = {
-            'lat': msg.latitude,
-            'lon': msg.longitude,
+            'lat': lat,
+            'lon': lon,
             'alt': msg.altitude
         }
 
@@ -300,15 +315,20 @@ class Bag2SIP4DConverter:
         }
 
     def _get_nearest_gps(self, timestamp_sec):
-        """Get nearest GPS data to timestamp"""
+        """Get nearest GPS data to timestamp, or None when there is no fix.
+
+        Never invent a coordinate here. A made-up position is indistinguishable
+        from a real one downstream, and a single bogus point stretches the
+        spatial bounds far enough to collapse every real marker into one pixel
+        when a viewer fits the map to the data.
+        """
         if not self.gps_data:
-            # Return default Tokyo area
-            return 35.6762, 139.6503
+            return None
 
         # Convert GPS timestamp strings to float for comparison
         gps_times = [(float(k), k) for k in self.gps_data.keys()]
         if not gps_times:
-            return 35.6762, 139.6503
+            return None
 
         # Find nearest timestamp (considering both seconds and nanoseconds)
         nearest_key = min(gps_times, key=lambda t: abs(t[0] - timestamp_sec))[1]
@@ -357,37 +377,119 @@ class Bag2SIP4DConverter:
         }
 
     def create_schema(self):
-        """Create schema.json"""
-        return {
-            "num_column": 3,
-            "code": "99-999-99",
-            "version": "1",
-            "columns": [
+        """Create schema.json in SIP4D-ZIP v2 format with backward compatibility"""
+        # Build elements array (v2 format)
+        elements = [
                 {
-                    "name": "filename",
-                    "jname": "ファイル名",
-                    "connid": "filename",
+                    "propertyInformation": {
+                        "name": "filename",
+                        "label": "ファイル名",
+                        "unit": ""
+                    },
                     "show": True,
-                    "description": "画像ファイル名",
-                    "type": "String"
+                    "necessary": False,
+                    "description": "Image filename",
+                    "dataType": "String"
                 },
                 {
-                    "name": "heading",
-                    "jname": "方位角",
-                    "connid": "heading",
+                    "propertyInformation": {
+                        "name": "heading",
+                        "label": "撮影方向",
+                        "unit": "度"
+                    },
                     "show": True,
+                    "necessary": False,
                     "description": "Camera heading angle (0=North, 90=East, 180=South, 270=West)",
-                    "type": "Double"
+                    "dataType": "Float"
                 },
                 {
-                    "name": "timestamp",
-                    "jname": "タイムスタンプ",
-                    "connid": "timestamp",
+                    "propertyInformation": {
+                        "name": "timestamp",
+                        "label": "撮影時刻",
+                        "unit": ""
+                    },
                     "show": True,
+                    "necessary": False,
                     "description": "Image timestamp (ISO8601)",
-                    "type": "String"
+                    "dataType": "Datetime"
+                },
+                {
+                    "propertyInformation": {
+                        "name": "_attachedFiles",
+                        "label": "添付ファイル",
+                        "unit": ""
+                    },
+                    "show": True,
+                    "necessary": False,
+                    "description": "",
+                    "dataType": "Array",
+                    "elements": [
+                        {
+                            "propertyInformation": {
+                                "name": "filename",
+                                "label": "ファイル名",
+                                "unit": ""
+                            },
+                            "show": False,
+                            "necessary": True,
+                            "description": "",
+                            "dataType": "String"
+                        },
+                        {
+                            "propertyInformation": {
+                                "name": "filetype",
+                                "label": "ファイルタイプ",
+                                "unit": ""
+                            },
+                            "show": False,
+                            "necessary": True,
+                            "description": "",
+                            "dataType": "String"
+                        }
+                    ]
                 }
             ]
+
+        # Build legacy columns array for backward compatibility
+        columns = [
+            {
+                "name": "filename",
+                "jname": "ファイル名",
+                "connid": "filename",
+                "show": True,
+                "description": "Image filename",
+                "type": "String"
+            },
+            {
+                "name": "heading",
+                "jname": "撮影方向",
+                "connid": "heading",
+                "show": True,
+                "description": "Camera heading angle (0=North, 90=East, 180=South, 270=West)",
+                "type": "Double"
+            },
+            {
+                "name": "timestamp",
+                "jname": "撮影時刻",
+                "connid": "timestamp",
+                "show": True,
+                "description": "Image timestamp (ISO8601)",
+                "type": "String"
+            }
+        ]
+
+        # Return hybrid format: SIP4D-ZIP v2 + legacy compatibility
+        return {
+            # SIP4D-ZIP v2 format
+            "informationTypeCode": "universal",
+            "schemaVersion": "1.0",
+            "geometryType": "Point",
+            "elements": elements,
+            # Legacy format for backward compatibility
+            "version": "1",
+            "code": "99-999-99",
+            "num_column": 3,
+            "columns": columns
         }
 
     def create_metadata(self):
@@ -427,7 +529,7 @@ class Bag2SIP4DConverter:
             "entry": [{
                 "type": "GeoJSON",
                 "title": "Camera Images",
-                "file": "images/features.geojson",
+                "file": "features.geojson",
                 "updated": now,
                 "bbox": [self.min_lon, self.min_lat, self.max_lon, self.max_lat]
             }]
@@ -444,13 +546,13 @@ class Bag2SIP4DConverter:
 
             # Create GeoJSON
             geojson = self.create_geojson()
-            geojson_path = os.path.join(self.entry_dir, "features.geojson")
+            geojson_path = os.path.join(self.work_dir, "features.geojson")
             with open(geojson_path, 'w', encoding='utf-8') as f:
                 json.dump(geojson, f, ensure_ascii=False, indent=2)
 
             # Create schema
             schema = self.create_schema()
-            schema_path = os.path.join(self.entry_dir, "features_columns.json")
+            schema_path = os.path.join(self.work_dir, "features_columns.json")
             with open(schema_path, 'w', encoding='utf-8') as f:
                 json.dump(schema, f, ensure_ascii=False, indent=2)
 
@@ -466,12 +568,12 @@ class Bag2SIP4DConverter:
 
             with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zf:
                 zf.write(metadata_path, arcname="sip4d_zip_meta.json")
-                zf.write(geojson_path, arcname="images/features.geojson")
-                zf.write(schema_path, arcname="images/features_columns.json")
+                zf.write(geojson_path, arcname="features.geojson")
+                zf.write(schema_path, arcname="features_columns.json")
 
-                for img_file in os.listdir(self.files_dir):
+                for img_file in sorted(os.listdir(self.files_dir)):
                     img_path = os.path.join(self.files_dir, img_file)
-                    zf.write(img_path, arcname=f"images/files/{img_file}")
+                    zf.write(img_path, arcname=f"files/{img_file}")
 
             rospy.loginfo(f"✓ Created: {zip_path}")
             rospy.loginfo(f"✓ Total images: {len(self.images)}")
