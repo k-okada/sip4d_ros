@@ -202,9 +202,16 @@ class Bag2SIP4DConverter:
                 gps = self.gps_data[stamp_key]
                 lat, lon = float(gps['lat']), float(gps['lon'])
             else:
-                # Use nearest GPS data
-                lat, lon = self._get_nearest_gps(timestamp_sec)
-                lat, lon = float(lat), float(lon)
+                # Use nearest GPS data. Frames recorded before the first fix
+                # have no position, so drop them instead of placing them at a
+                # fallback coordinate.
+                nearest = self._get_nearest_gps(timestamp_sec)
+                if nearest is None:
+                    rospy.logdebug(
+                        f"Skipping frame {frame_id}: no GPS fix available yet"
+                    )
+                    return
+                lat, lon = float(nearest[0]), float(nearest[1])
 
             # Calculate heading from odometry (if available)
             heading = self._get_heading_at_time(timestamp_sec, timestamp_nsec)
@@ -265,11 +272,20 @@ class Bag2SIP4DConverter:
             rospy.logerr(f"Error processing image: {e}")
 
     def gps_callback(self, msg):
-        """Store GPS data with timestamp"""
+        """Store GPS data with timestamp, ignoring messages without a fix"""
+        # A receiver with no fix still publishes, reporting NaN or (0, 0).
+        # Those reach the GeoJSON as real points and wreck the spatial bounds
+        # the same way a hardcoded fallback would, so drop them here.
+        lat, lon = msg.latitude, msg.longitude
+        if math.isnan(lat) or math.isnan(lon):
+            return
+        if lat == 0.0 and lon == 0.0:
+            return
+
         stamp_key = f"{msg.header.stamp.secs}.{msg.header.stamp.nsecs}"
         self.gps_data[stamp_key] = {
-            'lat': msg.latitude,
-            'lon': msg.longitude,
+            'lat': lat,
+            'lon': lon,
             'alt': msg.altitude
         }
 
@@ -299,15 +315,20 @@ class Bag2SIP4DConverter:
         }
 
     def _get_nearest_gps(self, timestamp_sec):
-        """Get nearest GPS data to timestamp"""
+        """Get nearest GPS data to timestamp, or None when there is no fix.
+
+        Never invent a coordinate here. A made-up position is indistinguishable
+        from a real one downstream, and a single bogus point stretches the
+        spatial bounds far enough to collapse every real marker into one pixel
+        when a viewer fits the map to the data.
+        """
         if not self.gps_data:
-            # Return default Tokyo area
-            return 35.6762, 139.6503
+            return None
 
         # Find nearest timestamp in gps_data
         gps_times = [float(k.split('.')[0]) for k in self.gps_data.keys()]
         if not gps_times:
-            return 35.6762, 139.6503
+            return None
 
         nearest_time = min(gps_times, key=lambda t: abs(t - timestamp_sec))
         nearest_key = [k for k in self.gps_data.keys()
