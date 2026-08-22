@@ -1,0 +1,48 @@
+name: Deploy web viewer to GitHub Pages
+
+on:
+  push:
+    branches: [master, web]
+    # web/ does not exist on every branch yet. The path filter keeps this
+    # workflow dormant where it is absent, so it starts working on its own
+    # once web/ reaches master.
+    paths:
+      - 'web/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+# Grant GITHUB_TOKEN the permissions the Pages deployment needs
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Serialize deployments, and never cancel a run that is already publishing
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      # The viewer is static, so web/ is published as the site root. Every
+      # asset reference in index.html is relative, which is what lets the
+      # site work under the /<repo>/ subpath of a project page.
+      - name: Upload web/ as the Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: web
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
